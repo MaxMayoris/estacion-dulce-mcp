@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "functions": {
+    "api/server.ts": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
+

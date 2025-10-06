@@ -1,0 +1,31 @@
+{
+  "name": "mcp-estacion-dulce",
+  "version": "1.0.0",
+  "description": "MCP Server for Vercel Functions",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "tsc",
+    "deploy": "vercel deploy",
+    "deploy:prod": "vercel deploy --prod",
+    "type-check": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "keywords": ["mcp", "vercel", "firebase", "typescript"],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.19.1",
+    "firebase-admin": "^13.5.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "typescript": "^5.9.3",
+    "vercel": "^48.2.2",
+    "rimraf": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20 <21",
+    "npm": ">=10 <11"
+  }
+}
+
