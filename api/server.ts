@@ -40,7 +40,7 @@ const tools: Tool[] = [
  * @param request - HTTP request object
  * @returns HTTP response with MCP protocol data
  */
-export default async function handler(request: Request): Promise<Response> {
+async function handler(request: Request): Promise<Response> {
   // Validate authentication
   if (!validateAuth(request)) {
     return createAuthError();
@@ -130,3 +130,5 @@ export default async function handler(request: Request): Promise<Response> {
     );
   }
 }
+
+export default handler;
