@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "regions": ["iad1"],
+  "regions": ["gru1"],
   "installCommand": "npm install",
   "functions": {
     "api/server.ts": {
