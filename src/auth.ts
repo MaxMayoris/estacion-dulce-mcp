@@ -4,9 +4,11 @@ const AuthSchema = z.object({
   authorization: z.string().startsWith('Bearer '),
 });
 
-export function validateAuth(request: Request): boolean {
+export function validateAuth(request: Request | { headers: any }): boolean {
   try {
-    const authHeader = request.headers.get('authorization');
+    const authHeader = request.headers.get ? 
+      request.headers.get('authorization') : 
+      request.headers.authorization;
     
     if (!authHeader) {
       return false;

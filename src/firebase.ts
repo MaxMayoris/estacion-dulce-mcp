@@ -10,9 +10,16 @@ export function initializeFirebase(): admin.firestore.Firestore {
     }
 
     let serviceAccount;
+    let jsonString = serviceAccountJson;
+    
     try {
-      serviceAccount = JSON.parse(serviceAccountJson);
+      // Fix newlines in private key - replace literal \n with escaped \\n
+      jsonString = jsonString.replace(/\n/g, '\\n');
+      
+      // Parse the JSON
+      serviceAccount = JSON.parse(jsonString);
     } catch (error) {
+      console.error('Error parsing FIREBASE_SERVICE_ACCOUNT_JSON:', error);
       throw new Error('Invalid FIREBASE_SERVICE_ACCOUNT_JSON: Must be valid JSON');
     }
 

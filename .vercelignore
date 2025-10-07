@@ -1,0 +1,6 @@
+# Ignore development files
+dev-server.js
+.env.local
+node_modules/
+dist/
+*.log

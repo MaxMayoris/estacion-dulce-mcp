@@ -3,14 +3,19 @@
   "version": "1.0.0",
   "description": "MCP Server for Vercel Functions",
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "tsc && node dev-server.js",
     "build": "tsc",
     "deploy": "vercel deploy",
     "deploy:prod": "vercel deploy --prod",
     "type-check": "tsc --noEmit",
     "clean": "rimraf dist"
   },
-  "keywords": ["mcp", "vercel", "firebase", "typescript"],
+  "keywords": [
+    "mcp",
+    "vercel",
+    "firebase",
+    "typescript"
+  ],
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.19.1",
@@ -19,13 +24,13 @@
   },
   "devDependencies": {
     "@types/node": "^20.14.9",
+    "dotenv": "^17.2.3",
+    "rimraf": "^5.0.0",
     "typescript": "^5.9.3",
-    "vercel": "^48.2.2",
-    "rimraf": "^5.0.0"
+    "vercel": "^48.2.2"
   },
   "engines": {
     "node": "20.x",
     "npm": ">=10 <11"
   }
 }
-

@@ -1,0 +1,100 @@
+---
+alwaysApply: true
+---
+
+# Estación Dulce MCP Server - Development Rules
+
+## Project Context
+- **Remote MCP server** on Vercel Functions (Node 20, not Edge)
+- **Core libraries**: @modelcontextprotocol/sdk, firebase-admin, zod
+- **Endpoint**: /api/server exposing MCP tools
+- **Backend**: Firestore via firebase-admin with service account credentials
+- **Goal**: Read/write limited Firestore collections (products, recipes, categories) with strict validation
+
+## Code Style
+- **Language**: All code, identifiers, comments, and docs in English
+- **TypeScript**: Strict mode, clear types, prefer `unknown` over `any`
+- **Modules**: Small, composable modules and pure functions
+- **Comments**: Minimal comments, JSDoc for exported functions
+- **Imports**: Minimal and sorted, avoid dead code
+- **Returns**: Structured objects with clear shapes, no throwing for expected validation errors
+
+## Security & Secrets
+- **No hardcoded secrets**: Always read from environment variables
+- **API Key auth**: Enforce `Authorization: Bearer` header (MCP_API_KEY)
+- **Allowlist**: Use allowlist for writable collections and fields
+- **PROD writes**: Require `confirm: true`, prefer `dryRun: true` by default
+- **Audit logging**: Log all mutations to `mcp_audit` collection
+
+## Validation & Errors
+- **Zod validation**: Validate every tool input with zod
+- **Numeric coercion**: Coerce/round numeric fields (prices to 2 decimals)
+- **Structured errors**: Return `{ error: string, code?: string }` for business constraints
+- **No stack traces**: Convert internal errors to safe messages, log details server-side
+
+## Firestore Access Policy
+- **Collections**: products, recipes, categories (extend only with approval)
+- **Read operations**: Fetch by ID or list with safe pagination/limits
+- **Write operations**: Only update allowed fields, enforce ENV check (DEV vs PROD)
+- **Currency**: Round to 2 decimals, use server timestamps for updatedAt
+- **Performance**: Avoid N+1 reads, batch or aggregate when needed
+
+## Architecture Structure
+```
+src/
+├── dtos/                    # Data Transfer Objects
+│   ├── product.dto.ts      # Product interfaces
+│   ├── common.dto.ts       # Common response types
+│   └── index.ts            # Barrel exports
+├── services/               # Business Logic
+│   ├── product.service.ts  # Product operations
+│   └── index.ts            # Barrel exports
+├── tools/                  # MCP Tools
+│   ├── list-products.tool.ts # Tool implementations
+│   └── index.ts            # Barrel exports
+├── auth.ts                 # Authentication
+├── firebase.ts             # Firebase setup
+├── validation.ts           # Zod schemas
+├── constants.ts            # Constants
+└── audit.ts                # Audit logging
+```
+
+## Tool Implementation
+- **Read tools**: get_product(id), get_recipe(id), list_products(limit, categoryId?)
+- **Write tools**: update_product_price(id, newPrice, confirm?, dryRun?)
+- **Each tool**: Concise description, strict zod schema, safe return shape, JSDoc
+
+## Environment Variables
+- `FIREBASE_SERVICE_ACCOUNT_JSON`: Firebase service account JSON
+- `MCP_API_KEY`: API key for authentication
+- `ENV`: Environment (DEV/PROD)
+
+## Error Handling
+- **Validation errors**: Return structured error with code "VALIDATION"
+- **Internal errors**: Return structured error with code "INTERNAL"
+- **Not found**: Return structured error with code "NOT_FOUND"
+- **Unauthorized**: Return structured error with code "UNAUTHORIZED"
+
+## Performance Guidelines
+- **Limits**: Default limit <= 50 for list operations
+- **Indexed queries**: Use indexed fields for filtering
+- **Batching**: Batch operations when possible
+- **Caching**: Consider caching for frequent reads
+
+## Testing & Development
+- **Local dev**: Use `vercel dev` or custom dev server
+- **Environment**: Pull variables with `npx vercel env pull .env.local`
+- **Testing**: Use Postman or curl for endpoint testing
+- **Dry run**: Always test with `dryRun: true` first
+
+## Git & CI Guidelines
+- **Small PRs**: Keep changes focused and small
+- **New tools**: Require schemas, JSDoc, negative tests, audit coverage
+- **Security**: No secrets in git, use .gitignore for sensitive files
+- **Documentation**: Update README for new tools and changes
+
+## Output & UX
+- **Terse responses**: Keep responses concise and structured
+- **Deterministic**: Ensure consistent response formats
+- **Dry run output**: Show what would be changed without executing
+- **Error messages**: User-friendly, actionable error messages

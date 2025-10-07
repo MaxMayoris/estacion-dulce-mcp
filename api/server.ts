@@ -11,7 +11,7 @@ import {
 import { z } from 'zod';
 import { validateAuth, createAuthError } from '../src/auth.js';
 import { validateEnvironment } from '../src/validation.js';
-import { listProducts } from '../src/list-products.js';
+import { listProducts } from '../src/tools/index.js';
 
 // Single read-only tool definition
 const tools: Tool[] = [
@@ -75,7 +75,7 @@ async function handler(request: Request): Promise<Response> {
 
       try {
         if (name === 'list_products') {
-          const result = await listProducts(args?.limit as number, args?.categoryId as string);
+          const result = await listProducts(args);
           
           return {
             content: [

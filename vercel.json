@@ -1,7 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "installCommand": "npm install",
   "functions": {
     "api/server.ts": {
       "runtime": "@vercel/node@4.0.0"
