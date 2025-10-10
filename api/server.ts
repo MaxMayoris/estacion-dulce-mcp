@@ -12,6 +12,7 @@ import {
 import { z } from 'zod';
 import { validateAuth, createAuthError } from '../src/auth.js';
 import { validateEnvironment } from '../src/validation.js';
+import { createErrorResponse, createHttpErrorResponse, ErrorCode } from '../src/errors/index.js';
 import { listProducts, answerInventoryQuery, getClientOrders } from '../src/tools/index.js';
 import { 
   RESOURCE_CATALOG,
@@ -76,22 +77,23 @@ const resources: Resource[] = RESOURCE_CATALOG.map(r => ({
  * @returns HTTP response with MCP protocol data
  */
 async function handler(request: any): Promise<Response> {
-  // Log incoming request
-  console.log('📥 Incoming request:', {
-    method: request.method,
-    url: request.url,
-    hasAuthHeader: !!(request.headers?.get ? request.headers.get('authorization') : request.headers?.authorization)
-  });
-
-  // Validate authentication
-  if (!validateAuth(request)) {
-    console.log('❌ Auth failed - returning 401');
-    return createAuthError();
-  }
-  
-  console.log('✅ Auth successful');
-
   try {
+    // Log incoming request
+    console.log('📥 Incoming request:', {
+      method: request.method,
+      url: request.url,
+      hasAuthHeader: !!(request.headers?.get ? request.headers.get('authorization') : request.headers?.authorization),
+      bodyType: typeof request.body,
+      hasBody: !!request.body
+    });
+
+    // Validate authentication
+    if (!validateAuth(request)) {
+      console.log('❌ Auth failed - returning 401');
+      return createAuthError();
+    }
+    
+    console.log('✅ Auth successful');
     // Validate environment
     const env = validateEnvironment();
 
@@ -267,11 +269,16 @@ async function handler(request: any): Promise<Response> {
     });
 
     // Process request using MCP server
-    const body = await request.json() as any;
+    // Vercel provides body already parsed
+    const body = request.body || request;
     
     // Pass If-None-Match header to MCP request if present
-    const ifNoneMatch = request.headers.get('If-None-Match');
-    const ifModifiedSince = request.headers.get('If-Modified-Since');
+    const ifNoneMatch = request.headers?.get ? 
+      request.headers.get('If-None-Match') : 
+      request.headers?.['if-none-match'];
+    const ifModifiedSince = request.headers?.get ? 
+      request.headers.get('If-Modified-Since') : 
+      request.headers?.['if-modified-since'];
     
     if (body.params && (ifNoneMatch || ifModifiedSince)) {
       body.params._meta = {
@@ -290,28 +297,14 @@ async function handler(request: any): Promise<Response> {
     });
 
   } catch (error) {
-    console.error('❌ Server error:', error);
-    console.error('❌ Error stack:', (error as Error).stack);
-    console.error('❌ Error details:', {
-      message: (error as Error).message,
-      name: (error as Error).name,
-      cause: (error as any).cause
-    });
-    
-    return new Response(
-      JSON.stringify({ 
-        error: 'Internal Server Error',
-        code: 'INTERNAL',
-        message: (error as Error).message,
-        stack: process.env.ENV === 'DEV' ? (error as Error).stack : undefined
-      }),
-      {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
+    const errorResponse = createErrorResponse(
+      ErrorCode.INTERNAL,
+      'Internal Server Error',
+      error,
+      request.url
     );
+    
+    return createHttpErrorResponse(errorResponse, 500);
   }
 }
 
