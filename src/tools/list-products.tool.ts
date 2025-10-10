@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ProductService } from '../services';
-import { ApiResponse, Product } from '../dtos';
+import { ApiResponse, Product } from '../models';
 
 /**
  * Input validation schema for list_products tool

@@ -1,3 +1,5 @@
+import { EPersonType } from '../enums';
+
 /**
  * Person data structure matching Android app PersonDTO
  * 
@@ -7,7 +9,7 @@ export interface Person {
   id: string;
   name: string;
   lastName: string;
-  type: string;
+  type: EPersonType;
   phones: Phone[];
   addresses: string[];
 }
@@ -36,7 +38,7 @@ export interface Address {
 export interface PersonInput {
   name: string;
   lastName: string;
-  type: string;
+  type: EPersonType;
   phones: Phone[];
   addresses: string[];
 }

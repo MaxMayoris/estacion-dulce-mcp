@@ -13,7 +13,14 @@ import { z } from 'zod';
 import { validateAuth, createAuthError } from '../src/auth.js';
 import { validateEnvironment } from '../src/validation.js';
 import { listProducts, answerInventoryQuery, getClientOrders } from '../src/tools/index.js';
-import { RESOURCE_CATALOG, getInventoryResource, getClientsResource } from '../src/resources/index.js';
+import { 
+  RESOURCE_CATALOG,
+  getProductsIndexResource,
+  getRecipesIndexResource,
+  getPersonsIndexResource,
+  getMovementsLast30DResource,
+  getVersionManifestResource
+} from '../src/resources/index.js';
 
 // Tools catalog
 const tools: Tool[] = [
@@ -199,18 +206,36 @@ async function handler(request: Request): Promise<Response> {
         let resourceData: any;
         
         switch (uri) {
-          case 'mcp://estacion-dulce/inventory':
-            resourceData = await getInventoryResource({
+          case 'mcp://estacion-dulce/products#index':
+            resourceData = await getProductsIndexResource({
               ifNoneMatch: request.params._meta?.ifNoneMatch as string,
               ifModifiedSince: request.params._meta?.ifModifiedSince as string
             });
             break;
             
-          case 'mcp://estacion-dulce/clients':
-            resourceData = await getClientsResource({
+          case 'mcp://estacion-dulce/recipes#index':
+            resourceData = await getRecipesIndexResource({
               ifNoneMatch: request.params._meta?.ifNoneMatch as string,
               ifModifiedSince: request.params._meta?.ifModifiedSince as string
             });
+            break;
+            
+          case 'mcp://estacion-dulce/persons#index':
+            resourceData = await getPersonsIndexResource({
+              ifNoneMatch: request.params._meta?.ifNoneMatch as string,
+              ifModifiedSince: request.params._meta?.ifModifiedSince as string
+            });
+            break;
+            
+          case 'mcp://estacion-dulce/movements#last-30d':
+            resourceData = await getMovementsLast30DResource({
+              ifNoneMatch: request.params._meta?.ifNoneMatch as string,
+              ifModifiedSince: request.params._meta?.ifModifiedSince as string
+            });
+            break;
+            
+          case 'mcp://estacion-dulce/version-manifest':
+            resourceData = await getVersionManifestResource();
             break;
             
           default:
@@ -233,6 +258,19 @@ async function handler(request: Request): Promise<Response> {
 
     // Process request using MCP server
     const body = await request.json() as any;
+    
+    // Pass If-None-Match header to MCP request if present
+    const ifNoneMatch = request.headers.get('If-None-Match');
+    const ifModifiedSince = request.headers.get('If-Modified-Since');
+    
+    if (body.params && (ifNoneMatch || ifModifiedSince)) {
+      body.params._meta = {
+        ...(body.params._meta || {}),
+        ifNoneMatch,
+        ifModifiedSince
+      };
+    }
+    
     const response = await server.request(body, z.object({}));
 
     return new Response(JSON.stringify(response), {

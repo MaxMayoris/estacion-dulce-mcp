@@ -6,7 +6,14 @@ require('dotenv').config({ path: '.env.local' });
 
 // Import the MCP tools and resources
 const { listProducts, answerInventoryQuery, getClientOrders } = require('./dist/src/tools/index.js');
-const { RESOURCE_CATALOG, getInventoryResource, getClientsResource } = require('./dist/src/resources/index.js');
+const { 
+  RESOURCE_CATALOG,
+  getProductsIndexResource,
+  getRecipesIndexResource,
+  getPersonsIndexResource,
+  getMovementsLast30DResource,
+  getVersionManifestResource
+} = require('./dist/src/resources/index.js');
 const { validateAuth, createAuthError } = require('./dist/src/auth.js');
 const { validateEnvironment } = require('./dist/src/validation.js');
 
@@ -105,14 +112,26 @@ const server = http.createServer(async (req, res) => {
             res.end(JSON.stringify(response));
           } else if (requestData.method === 'resources/read') {
             const uri = requestData.params?.uri;
+            const ifNoneMatch = req.headers['if-none-match'];
+            const ifModifiedSince = req.headers['if-modified-since'];
+            
             let resourceData;
             
             switch (uri) {
-              case 'mcp://estacion-dulce/inventory':
-                resourceData = await getInventoryResource();
+              case 'mcp://estacion-dulce/products#index':
+                resourceData = await getProductsIndexResource({ ifNoneMatch, ifModifiedSince });
                 break;
-              case 'mcp://estacion-dulce/clients':
-                resourceData = await getClientsResource();
+              case 'mcp://estacion-dulce/recipes#index':
+                resourceData = await getRecipesIndexResource({ ifNoneMatch, ifModifiedSince });
+                break;
+              case 'mcp://estacion-dulce/persons#index':
+                resourceData = await getPersonsIndexResource({ ifNoneMatch, ifModifiedSince });
+                break;
+              case 'mcp://estacion-dulce/movements#last-30d':
+                resourceData = await getMovementsLast30DResource({ ifNoneMatch, ifModifiedSince });
+                break;
+              case 'mcp://estacion-dulce/version-manifest':
+                resourceData = await getVersionManifestResource();
                 break;
               default:
                 res.writeHead(404, { 'Content-Type': 'application/json' });

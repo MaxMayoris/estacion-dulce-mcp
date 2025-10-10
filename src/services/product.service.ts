@@ -1,5 +1,5 @@
 import { getFirestore } from '../firebase';
-import { Product, ApiResponse } from '../dtos';
+import { Product, ApiResponse } from '../models';
 
 /**
  * Product service for Firestore operations

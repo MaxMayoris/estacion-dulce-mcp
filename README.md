@@ -1,85 +1,62 @@
-# MCP Estación Dulce - Servidor Remoto
+# MCP Estación Dulce
 
-Servidor MCP (Model Context Protocol) para desplegar en Vercel Functions con integración a Firebase Firestore.
+Remote MCP server for Estación Dulce bakery management system.
 
-## 🚀 Quick Start
+## Quick Start
 
-### Prerequisitos
-- Node.js 20.x
-- Cuenta de Vercel
-- Proyecto Firebase con Firestore
-
-### Instalación
+### Installation
 ```bash
 npm install
 ```
 
-### Variables de Entorno
-Crea `.env.local` con:
+### Environment Variables
 ```bash
-MCP_API_KEY=tu-clave-api
+MCP_API_KEY=your-api-key
 ENV=DEV
 FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
 ```
 
-### Desarrollo Local
+### Development
 ```bash
-# Compilar
 npm run build
-
-# Servidor local
 node dev-server.js
-
-# O con Vercel
-npx vercel dev
 ```
 
 ### Deploy
 ```bash
-# Desarrollo
-npm run deploy
-
-# Producción
-npm run deploy:prod
+npm run deploy        # Preview
+npm run deploy:prod   # Production
 ```
 
-## 🛠️ Herramientas Disponibles
+## API Endpoint
 
-### `list_products`
-Lista productos con filtros opcionales.
+**Local:** `http://localhost:3000/api/server`  
+**Production:** `https://mcp-estacion-dulce.vercel.app/api/server`
 
-**Parámetros:**
-- `limit` (number, optional): Máximo de productos (1-50, default: 20)
-- `categoryId` (string, optional): ID de categoría para filtrar
+## Authentication
 
-**Respuesta:**
+All requests require:
+```
+Authorization: Bearer your-api-key
+```
+
+## MCP Protocol
+
+### Tools
+- `list_products` - List products with filters
+- `answer_inventory_query` - Natural language inventory queries
+- `get_client_orders` - Get client orders
+
+### Resources
+- `mcp://estacion-dulce/products#index` - Products index
+- `mcp://estacion-dulce/recipes#index` - Recipes index
+- `mcp://estacion-dulce/persons#index` - Persons index (no PII)
+- `mcp://estacion-dulce/movements#last-30d` - Movements aggregated
+- `mcp://estacion-dulce/version-manifest` - Cache manifest
+
+## Example Request
+
 ```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "product-123",
-      "name": "Huevos",
-      "quantity": 123,
-      "minimumQuantity": 1,
-      "cost": 4500,
-      "salePrice": 0,
-      "measure": "kg"
-    }
-  ]
-}
-```
-
-## 🧪 Testing
-
-### Con Postman
-```
-POST http://localhost:3000/api/server
-Headers: 
-  Content-Type: application/json
-  Authorization: Bearer tu-api-key
-
-Body:
 {
   "jsonrpc": "2.0",
   "id": 1,
@@ -91,49 +68,15 @@ Body:
 }
 ```
 
-## 🏗️ Arquitectura
+## Development Rules
 
-```
-src/
-├── dtos/           # Interfaces de datos
-├── services/       # Lógica de negocio
-├── tools/          # Herramientas MCP
-├── auth.ts         # Autenticación
-├── firebase.ts     # Configuración Firebase
-└── validation.ts   # Esquemas Zod
-```
+See `.cursor/rules/develope-rules.mdc` for complete project guidelines.
 
-## 📋 Reglas de Desarrollo
-
-Ver `.cursor/rules/develope-rules.mdc` para las reglas completas del proyecto.
-
-### Principios Clave:
-- **TypeScript strict mode**
-- **Validación con Zod**
-- **Autenticación por API Key**
-- **Logs de auditoría**
-- **No hardcoded secrets**
-
-## 🔗 URLs
-
-- **Local**: `http://localhost:3000/api/server`
-- **Desarrollo**: `https://mcp-estacion-dulce-*.vercel.app/api/server`
-- **Producción**: `https://mcp-estacion-dulce.vercel.app/api/server`
-
-## 📝 Scripts
-
-- `npm run build` - Compilar TypeScript
-- `npm run dev` - Servidor de desarrollo
-- `npm run deploy` - Deploy a desarrollo
-- `npm run deploy:prod` - Deploy a producción
-- `npm run type-check` - Verificar tipos
-- `npm run clean` - Limpiar build
-
-## 🔧 Tecnologías
+## Tech Stack
 
 - **Runtime**: Node.js 20
 - **Language**: TypeScript
 - **MCP SDK**: @modelcontextprotocol/sdk
 - **Database**: Firebase Firestore
-- **Deploy**: Vercel Functions
+- **Deploy**: Vercel Functions (São Paulo region)
 - **Validation**: Zod

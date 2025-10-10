@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ProductService } from '../services';
-import { ApiResponse, Product } from '../dtos';
+import { ApiResponse, Product } from '../models';
 
 /**
  * Input validation schema for answer_inventory_query tool
@@ -53,11 +53,17 @@ export async function answerInventoryQuery(args: unknown): Promise<{
     
     response += `Total inventory value: $${totalValue.toFixed(2)}`;
     
-    // Generate references
-    const references = products.map(p => ({
-      uri: `mcp://estacion-dulce/products/${p.id}`,
-      name: p.name
-    }));
+    // Generate references to resources
+    const references = [
+      {
+        uri: 'mcp://estacion-dulce/products#index',
+        name: 'Products Index'
+      },
+      {
+        uri: 'mcp://estacion-dulce/version-manifest',
+        name: 'Version Manifest'
+      }
+    ];
     
     return {
       text: response,

@@ -1,3 +1,5 @@
+import { EMovementType, EKitchenOrderStatus, EDeliveryType, EShipmentStatus } from '../enums';
+
 /**
  * Movement data structure matching Android app MovementDTO
  * 
@@ -5,7 +7,7 @@
  */
 export interface Movement {
   id: string;
-  type: string | null;
+  type: EMovementType | null;
   personId: string;
   movementDate: string;
   totalAmount: number;
@@ -15,7 +17,7 @@ export interface Movement {
   appliedAt: string | null;
   createdAt: string | null;
   detail: string;
-  kitchenOrderStatus: string | null;
+  kitchenOrderStatus: EKitchenOrderStatus | null;
   referenceImages: string[];
   isStock: boolean | null;
 }
@@ -35,9 +37,9 @@ export interface MovementItem {
  * Delivery data structure
  */
 export interface Delivery {
-  type: string;
+  type: EDeliveryType;
   date: string;
-  status: string;
+  status: EShipmentStatus;
   shipment: ShipmentDetails | null;
 }
 
@@ -57,7 +59,7 @@ export interface ShipmentDetails {
  * Movement creation/update input (without id)
  */
 export interface MovementInput {
-  type: string | null;
+  type: EMovementType | null;
   personId: string;
   movementDate: string;
   totalAmount: number;
@@ -65,7 +67,7 @@ export interface MovementInput {
   delivery: Delivery | null;
   delta: Record<string, number>;
   detail: string;
-  kitchenOrderStatus: string | null;
+  kitchenOrderStatus: EKitchenOrderStatus | null;
   referenceImages: string[];
   isStock: boolean | null;
 }
