@@ -122,11 +122,15 @@ async function handler(request: any): Promise<Response> {
           const toolName = body.params?.name;
           const args = body.params?.arguments || {};
           console.log(`🔧 Tool call: ${toolName}`, args);
+          console.log(`🔍 Validating tool: ${toolName}`);
           
           let result: any;
           
           // Validate tool exists before execution
           const validTools = ['list_products', 'answer_inventory_query', 'get_client_orders'];
+          console.log(`📋 Valid tools:`, validTools);
+          console.log(`✅ Tool is valid:`, validTools.includes(toolName));
+          
           if (!validTools.includes(toolName)) {
             console.error(`❌ Unknown tool requested: ${toolName}`);
             const errorResponse = {
@@ -142,13 +146,19 @@ async function handler(request: any): Promise<Response> {
               }
             };
             
-            console.log('📤 Returning tool not found error:', errorResponse);
+            console.log('📤 Returning tool not found error:', JSON.stringify(errorResponse));
+            console.log('🚀 About to return Response...');
             
-            return new Response(JSON.stringify(errorResponse), {
+            const response = new Response(JSON.stringify(errorResponse), {
               status: 200,
               headers: { 'Content-Type': 'application/json' }
             });
+            
+            console.log('✅ Response created, returning now');
+            return response;
           }
+          
+          console.log(`✅ Tool validated, executing: ${toolName}`);
           
           switch (toolName) {
             case 'list_products':
