@@ -130,6 +130,7 @@ async function handler(request: any): Promise<Response> {
               result = await listProducts(args);
               break;
             case 'answer_inventory_query':
+            case 'answer_query': // Alias for compatibility
               result = await answerInventoryQuery(args);
               break;
             case 'get_client_orders':
@@ -213,13 +214,26 @@ async function handler(request: any): Promise<Response> {
       }
     } catch (methodError) {
       console.error('❌ Method error:', methodError);
-      const errorResponse = createErrorResponse(
-        ErrorCode.INTERNAL,
-        (methodError as Error).message || 'Method execution failed',
-        methodError,
-        request.url
-      );
-      return createHttpErrorResponse(errorResponse, 500);
+      
+      // Return JSON-RPC error response
+      const errorResponse = {
+        jsonrpc: '2.0',
+        id: body.id,
+        error: {
+          code: -32603,
+          message: (methodError as Error).message || 'Internal error',
+          data: {
+            details: (methodError as Error).name
+          }
+        }
+      };
+      
+      console.log('📤 Returning error response:', errorResponse);
+      
+      return new Response(JSON.stringify(errorResponse), {
+        status: 200, // JSON-RPC errors use 200 with error object
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
   } catch (error) {
