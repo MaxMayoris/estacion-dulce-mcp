@@ -63,9 +63,16 @@ async function handler(request: any): Promise<Response> {
               }
             }
           };
-          return new Response(JSON.stringify(response), {
+          console.log('📤 Returning initialize response:', JSON.stringify(response));
+          console.log('🚀 Creating Response object...');
+          
+          const httpResponse = new Response(JSON.stringify(response), {
+            status: 200,
             headers: { 'Content-Type': 'application/json' }
           });
+          
+          console.log('✅ Response created, returning now');
+          return httpResponse;
         }
 
         case 'tools/list': {
@@ -272,6 +279,7 @@ async function handler(request: any): Promise<Response> {
     }
 
   } catch (error) {
+    console.error('❌ Top-level error caught:', error);
     const errorResponse = createErrorResponse(
       ErrorCode.INTERNAL,
       'Internal Server Error',
@@ -279,7 +287,10 @@ async function handler(request: any): Promise<Response> {
       request.url
     );
     
+    console.log('📤 Returning top-level error response');
     return createHttpErrorResponse(errorResponse, 500);
+  } finally {
+    console.log('🏁 Handler execution completed');
   }
 }
 
