@@ -47,10 +47,7 @@ export function createErrorResponse(
     ...(path && { path })
   };
 
-  // Add stack trace in DEV environment
-  if (process.env.ENV === 'DEV' && error instanceof Error) {
-    response.error.stack = error.stack;
-  }
+  // Stack trace is logged server-side only, never sent to client
 
   // Add error details if available
   if (error && typeof error === 'object') {
