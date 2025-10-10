@@ -8,7 +8,6 @@ export interface ErrorResponse {
     stack?: string;
     details?: any;
   };
-  timestamp: string;
   path?: string;
 }
 
@@ -43,7 +42,6 @@ export function createErrorResponse(
       code,
       message,
     },
-    timestamp: new Date().toISOString(),
     ...(path && { path })
   };
 
@@ -58,10 +56,9 @@ export function createErrorResponse(
   }
 
   // Log error details server-side
-  console.error('Error Response:', {
+  console.error('❌ Error Response:', {
     code,
     message,
-    timestamp: response.timestamp,
     ...(error instanceof Error && { 
       errorName: error.name,
       errorMessage: error.message,
