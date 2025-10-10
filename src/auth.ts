@@ -10,7 +10,10 @@ export function validateAuth(request: Request | { headers: any }): boolean {
       request.headers.get('authorization') : 
       request.headers.authorization;
     
+    console.log('🔑 Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.log('❌ No auth header found');
       return false;
     }
 
@@ -19,13 +22,20 @@ export function validateAuth(request: Request | { headers: any }): boolean {
     const apiKey = authHeader.replace('Bearer ', '');
     const expectedApiKey = process.env.MCP_API_KEY;
     
+    console.log('🔑 API Key length:', apiKey.length);
+    console.log('🔑 Expected key configured:', !!expectedApiKey);
+    
     if (!expectedApiKey) {
+      console.error('❌ MCP_API_KEY environment variable is required');
       throw new Error('MCP_API_KEY environment variable is required');
     }
 
-    return apiKey === expectedApiKey;
+    const isValid = apiKey === expectedApiKey;
+    console.log('🔑 API Key valid:', isValid);
+    
+    return isValid;
   } catch (error) {
-    console.error('Auth validation error:', error);
+    console.error('❌ Auth validation error:', error);
     return false;
   }
 }

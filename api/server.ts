@@ -76,10 +76,20 @@ const resources: Resource[] = RESOURCE_CATALOG.map(r => ({
  * @returns HTTP response with MCP protocol data
  */
 async function handler(request: Request): Promise<Response> {
+  // Log incoming request
+  console.log('📥 Incoming request:', {
+    method: request.method,
+    url: request.url,
+    hasAuthHeader: !!request.headers.get('authorization')
+  });
+
   // Validate authentication
   if (!validateAuth(request)) {
+    console.log('❌ Auth failed - returning 401');
     return createAuthError();
   }
+  
+  console.log('✅ Auth successful');
 
   try {
     // Validate environment
