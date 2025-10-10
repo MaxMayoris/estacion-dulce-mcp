@@ -16,7 +16,8 @@ import {
  * Main MCP server handler for Estación Dulce
  * Handles MCP protocol over HTTP without SDK connection
  */
-async function handler(request: any): Promise<Response> {
+export default async function handler(request: any): Promise<Response> {
+  console.log('🚀 Handler function called');
   try {
     // Log incoming request
     console.log('📥 Incoming request:', {
@@ -40,8 +41,25 @@ async function handler(request: any): Promise<Response> {
     console.log(`MCP Server running in ${env} mode`);
 
     // Parse request body
-    const body = request.body || request;
-    console.log('📦 Request body:', { method: body.method, id: body.id });
+    console.log('🔍 Request type:', typeof request);
+    console.log('🔍 Request.body type:', typeof request.body);
+    console.log('🔍 Request keys:', Object.keys(request).slice(0, 10));
+    
+    let body: any;
+    
+    // Vercel provides body in different ways depending on the request
+    if (typeof request.body === 'string') {
+      console.log('📦 Parsing body from string');
+      body = JSON.parse(request.body);
+    } else if (request.body && typeof request.body === 'object') {
+      console.log('📦 Using body object directly');
+      body = request.body;
+    } else {
+      console.log('📦 Using request as body');
+      body = request;
+    }
+    
+    console.log('📦 Parsed body:', { method: body.method, id: body.id });
 
     // Handle MCP methods
     try {
@@ -66,12 +84,20 @@ async function handler(request: any): Promise<Response> {
           console.log('📤 Returning initialize response:', JSON.stringify(response));
           console.log('🚀 Creating Response object...');
           
-          const httpResponse = new Response(JSON.stringify(response), {
+          const responseBody = JSON.stringify(response);
+          console.log('📏 Response body length:', responseBody.length);
+          
+          const httpResponse = new Response(responseBody, {
             status: 200,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 
+              'Content-Type': 'application/json',
+              'Content-Length': String(responseBody.length)
+            }
           });
           
-          console.log('✅ Response created, returning now');
+          console.log('✅ Response created, status:', httpResponse.status);
+          console.log('✅ Response headers:', Object.fromEntries(httpResponse.headers.entries()));
+          console.log('🚀 Returning response now...');
           return httpResponse;
         }
 
@@ -293,5 +319,3 @@ async function handler(request: any): Promise<Response> {
     console.log('🏁 Handler execution completed');
   }
 }
-
-export default handler;
