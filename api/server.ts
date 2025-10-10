@@ -1,39 +1,67 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
+  InitializeRequestSchema,
   Tool,
-  CallToolResult,
+  Resource,
   TextContent,
-  ImageContent,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { validateAuth, createAuthError } from '../src/auth.js';
 import { validateEnvironment } from '../src/validation.js';
-import { listProducts } from '../src/tools/index.js';
+import { listProducts, answerInventoryQuery, getClientOrders } from '../src/tools/index.js';
+import { RESOURCE_CATALOG, getInventoryResource, getClientsResource } from '../src/resources/index.js';
 
-// Single read-only tool definition
+// Tools catalog
 const tools: Tool[] = [
   {
     name: 'list_products',
-    description: 'List products from Estación Dulce with optional category filtering',
+    description: 'List products from inventory with optional filtering',
     inputSchema: {
       type: 'object',
       properties: {
-        limit: { 
-          type: 'number', 
-          description: 'Maximum number of products to return (1-50, default: 20)' 
-        },
-        categoryId: { 
-          type: 'string', 
-          description: 'Optional category ID to filter by exact match' 
-        }
+        limit: { type: 'number', description: 'Max products (1-50, default: 20)' },
+        categoryId: { type: 'string', description: 'Optional category filter' }
       },
       required: []
     }
+  },
+  {
+    name: 'answer_inventory_query',
+    description: 'Answer natural language queries about inventory status',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Natural language query about inventory' },
+        limit: { type: 'number', description: 'Max products to analyze (default: 20)' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'get_client_orders',
+    description: 'Get orders for a specific client',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        clientId: { type: 'string', description: 'Client ID' },
+        limit: { type: 'number', description: 'Max orders (default: 10)' }
+      },
+      required: ['clientId']
+    }
   }
 ];
+
+// Resources catalog
+const resources: Resource[] = RESOURCE_CATALOG.map(r => ({
+  uri: r.uri,
+  name: r.name,
+  description: r.description,
+  mimeType: r.mimeType
+}));
 
 /**
  * Main MCP server handler for Estación Dulce
@@ -49,7 +77,6 @@ async function handler(request: Request): Promise<Response> {
   try {
     // Validate environment
     const env = validateEnvironment();
-    console.log(`MCP Server running in ${env} mode`);
 
     // Create MCP server
     const server = new Server(
@@ -60,23 +87,79 @@ async function handler(request: Request): Promise<Response> {
       {
         capabilities: {
           tools: {},
+          resources: {},
         },
       }
     );
 
-    // Handle tool listing
+    // Store client info for logging
+    let clientInfo: any = null;
+
+    // Handle initialize
+    server.setRequestHandler(InitializeRequestSchema, async (request) => {
+      clientInfo = request.params.clientInfo;
+      console.log('Client connected:', clientInfo?.name || 'Unknown');
+      
+      return {
+        protocolVersion: '2024-11-05',
+        serverInfo: {
+          name: 'mcp-estacion-dulce',
+          version: '1.0.0'
+        },
+        capabilities: {
+          resources: true,
+          tools: true
+        }
+      };
+    });
+
+    // Handle tools/list
     server.setRequestHandler(ListToolsRequestSchema, async () => {
       return { tools };
     });
 
-    // Handle tool calls
+    // Handle tools/call
     server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
+      const startTime = Date.now();
 
       try {
-        if (name === 'list_products') {
-          const result = await listProducts(args);
-          
+        let result: any;
+        
+        switch (name) {
+          case 'list_products':
+            result = await listProducts(args);
+            break;
+            
+          case 'answer_inventory_query':
+            result = await answerInventoryQuery(args);
+            break;
+            
+          case 'get_client_orders':
+            result = await getClientOrders(args);
+            break;
+            
+          default:
+            throw new Error(`Unknown tool: ${name}`);
+        }
+        
+        const duration = Date.now() - startTime;
+        console.log(`Tool ${name} executed in ${duration}ms`);
+        
+        // Format response based on result type
+        if (result.text) {
+          // Natural language response with optional references
+          return {
+            content: [
+              {
+                type: 'text',
+                text: result.text
+              } as TextContent
+            ],
+            ...(result.references && { isError: false })
+          };
+        } else {
+          // Structured data response
           return {
             content: [
               {
@@ -86,19 +169,64 @@ async function handler(request: Request): Promise<Response> {
             ]
           };
         }
-
-        throw new Error(`Unknown tool: ${name}`);
       } catch (error) {
+        console.error(`Tool ${name} error:`, error);
         return {
           content: [
             {
               type: 'text',
               text: JSON.stringify({ 
                 error: (error as Error).message || 'Internal error',
-                code: 'VALIDATION'
+                code: 'INTERNAL'
               }, null, 2)
             } as TextContent
-          ]
+          ],
+          isError: true
+        };
+      }
+    });
+
+    // Handle resources/list
+    server.setRequestHandler(ListResourcesRequestSchema, async () => {
+      return { resources };
+    });
+
+    // Handle resources/read
+    server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      const { uri } = request.params;
+      
+      try {
+        let resourceData: any;
+        
+        switch (uri) {
+          case 'mcp://estacion-dulce/inventory':
+            resourceData = await getInventoryResource({
+              ifNoneMatch: request.params._meta?.ifNoneMatch as string,
+              ifModifiedSince: request.params._meta?.ifModifiedSince as string
+            });
+            break;
+            
+          case 'mcp://estacion-dulce/clients':
+            resourceData = await getClientsResource({
+              ifNoneMatch: request.params._meta?.ifNoneMatch as string,
+              ifModifiedSince: request.params._meta?.ifModifiedSince as string
+            });
+            break;
+            
+          default:
+            throw new Error(`Unknown resource: ${uri}`);
+        }
+        
+        return resourceData;
+      } catch (error) {
+        console.error(`Resource ${uri} error:`, error);
+        return {
+          contents: [{
+            type: 'text',
+            text: JSON.stringify({ error: (error as Error).message }),
+            uri,
+            mimeType: 'application/json'
+          }]
         };
       }
     });
@@ -118,7 +246,7 @@ async function handler(request: Request): Promise<Response> {
     return new Response(
       JSON.stringify({ 
         error: 'Internal Server Error',
-        code: 'VALIDATION',
+        code: 'INTERNAL',
         message: (error as Error).message 
       }),
       {

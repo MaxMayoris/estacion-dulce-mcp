@@ -15,6 +15,7 @@ export interface Product {
 
 /**
  * Product creation/update input (without id)
+ * Used for write operations
  */
 export interface ProductInput {
   name: string;

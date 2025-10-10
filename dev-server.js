@@ -4,8 +4,9 @@ const path = require('path');
 // Load environment variables
 require('dotenv').config({ path: '.env.local' });
 
-// Import the MCP tools directly
-const { listProducts } = require('./dist/src/tools/index.js');
+// Import the MCP tools and resources
+const { listProducts, answerInventoryQuery, getClientOrders } = require('./dist/src/tools/index.js');
+const { RESOURCE_CATALOG, getInventoryResource, getClientsResource } = require('./dist/src/resources/index.js');
 const { validateAuth, createAuthError } = require('./dist/src/auth.js');
 const { validateEnvironment } = require('./dist/src/validation.js');
 
@@ -50,8 +51,30 @@ const server = http.createServer(async (req, res) => {
           const requestData = JSON.parse(body);
           
           // Handle MCP requests
-          if (requestData.method === 'tools/call' && requestData.params?.name === 'list_products') {
-            const result = await listProducts(requestData.params.arguments || {});
+          let result;
+          
+          if (requestData.method === 'tools/call') {
+            const toolName = requestData.params?.name;
+            const args = requestData.params?.arguments || {};
+            
+            switch (toolName) {
+              case 'list_products':
+                result = await listProducts(args);
+                break;
+              case 'answer_inventory_query':
+                result = await answerInventoryQuery(args);
+                break;
+              case 'get_client_orders':
+                result = await getClientOrders(args);
+                break;
+              default:
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  error: 'Unknown tool',
+                  message: `Tool ${toolName} not found`
+                }));
+                return;
+            }
             
             const response = {
               jsonrpc: '2.0',
@@ -60,10 +83,50 @@ const server = http.createServer(async (req, res) => {
                 content: [
                   {
                     type: 'text',
-                    text: JSON.stringify(result, null, 2)
+                    text: result.text || JSON.stringify(result, null, 2)
                   }
-                ]
+                ],
+                ...(result.references && { references: result.references })
               }
+            };
+            
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(response));
+          } else if (requestData.method === 'resources/list') {
+            const response = {
+              jsonrpc: '2.0',
+              id: requestData.id,
+              result: {
+                resources: RESOURCE_CATALOG
+              }
+            };
+            
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(response));
+          } else if (requestData.method === 'resources/read') {
+            const uri = requestData.params?.uri;
+            let resourceData;
+            
+            switch (uri) {
+              case 'mcp://estacion-dulce/inventory':
+                resourceData = await getInventoryResource();
+                break;
+              case 'mcp://estacion-dulce/clients':
+                resourceData = await getClientsResource();
+                break;
+              default:
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  error: 'Resource not found',
+                  message: `Resource ${uri} not found`
+                }));
+                return;
+            }
+            
+            const response = {
+              jsonrpc: '2.0',
+              id: requestData.id,
+              result: resourceData
             };
             
             res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -72,7 +135,7 @@ const server = http.createServer(async (req, res) => {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({
               error: 'Invalid request',
-              message: 'Only list_products tool is supported'
+              message: 'Unsupported method'
             }));
           }
         } catch (error) {
