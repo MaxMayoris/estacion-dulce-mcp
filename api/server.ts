@@ -1,14 +1,3 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
-  InitializeRequestSchema,
-  Tool,
-  Resource,
-  TextContent,
-} from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { validateAuth, createAuthError } from '../src/auth.js';
 import { validateEnvironment } from '../src/validation.js';
@@ -23,58 +12,9 @@ import {
   getVersionManifestResource
 } from '../src/resources/index.js';
 
-// Tools catalog
-const tools: Tool[] = [
-  {
-    name: 'list_products',
-    description: 'List products from inventory with optional filtering',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: { type: 'number', description: 'Max products (1-50, default: 20)' },
-        categoryId: { type: 'string', description: 'Optional category filter' }
-      },
-      required: []
-    }
-  },
-  {
-    name: 'answer_inventory_query',
-    description: 'Answer natural language queries about inventory status',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'Natural language query about inventory' },
-        limit: { type: 'number', description: 'Max products to analyze (default: 20)' }
-      },
-      required: ['query']
-    }
-  },
-  {
-    name: 'get_client_orders',
-    description: 'Get orders for a specific client',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        clientId: { type: 'string', description: 'Client ID' },
-        limit: { type: 'number', description: 'Max orders (default: 10)' }
-      },
-      required: ['clientId']
-    }
-  }
-];
-
-// Resources catalog
-const resources: Resource[] = RESOURCE_CATALOG.map(r => ({
-  uri: r.uri,
-  name: r.name,
-  description: r.description,
-  mimeType: r.mimeType
-}));
-
 /**
  * Main MCP server handler for Estación Dulce
- * @param request - HTTP request object
- * @returns HTTP response with MCP protocol data
+ * Handles MCP protocol over HTTP without SDK connection
  */
 async function handler(request: any): Promise<Response> {
   try {
@@ -94,207 +34,193 @@ async function handler(request: any): Promise<Response> {
     }
     
     console.log('✅ Auth successful');
+    
     // Validate environment
     const env = validateEnvironment();
+    console.log(`MCP Server running in ${env} mode`);
 
-    // Create MCP server
-    const server = new Server(
-      {
-        name: 'mcp-estacion-dulce',
-        version: '1.0.0',
-      },
-      {
-        capabilities: {
-          tools: {},
-          resources: {},
-        },
-      }
-    );
-
-    // Store client info for logging
-    let clientInfo: any = null;
-
-    // Handle initialize
-    server.setRequestHandler(InitializeRequestSchema, async (request) => {
-      clientInfo = request.params.clientInfo;
-      console.log('Client connected:', clientInfo?.name || 'Unknown');
-      
-      return {
-        protocolVersion: '2024-11-05',
-        serverInfo: {
-          name: 'mcp-estacion-dulce',
-          version: '1.0.0'
-        },
-        capabilities: {
-          resources: true,
-          tools: true
-        }
-      };
-    });
-
-    // Handle tools/list
-    server.setRequestHandler(ListToolsRequestSchema, async () => {
-      return { tools };
-    });
-
-    // Handle tools/call
-    server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
-      const startTime = Date.now();
-
-      try {
-        let result: any;
-        
-        switch (name) {
-          case 'list_products':
-            result = await listProducts(args);
-            break;
-            
-          case 'answer_inventory_query':
-            result = await answerInventoryQuery(args);
-            break;
-            
-          case 'get_client_orders':
-            result = await getClientOrders(args);
-            break;
-            
-          default:
-            throw new Error(`Unknown tool: ${name}`);
-        }
-        
-        const duration = Date.now() - startTime;
-        console.log(`Tool ${name} executed in ${duration}ms`);
-        
-        // Format response based on result type
-        if (result.text) {
-          // Natural language response with optional references
-          return {
-            content: [
-              {
-                type: 'text',
-                text: result.text
-              } as TextContent
-            ],
-            ...(result.references && { isError: false })
-          };
-        } else {
-          // Structured data response
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(result, null, 2)
-              } as TextContent
-            ]
-          };
-        }
-      } catch (error) {
-        console.error(`Tool ${name} error:`, error);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({ 
-                error: (error as Error).message || 'Internal error',
-                code: 'INTERNAL'
-              }, null, 2)
-            } as TextContent
-          ],
-          isError: true
-        };
-      }
-    });
-
-    // Handle resources/list
-    server.setRequestHandler(ListResourcesRequestSchema, async () => {
-      return { resources };
-    });
-
-    // Handle resources/read
-    server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-      const { uri } = request.params;
-      
-      try {
-        let resourceData: any;
-        
-        switch (uri) {
-          case 'mcp://estacion-dulce/products#index':
-            resourceData = await getProductsIndexResource({
-              ifNoneMatch: request.params._meta?.ifNoneMatch as string,
-              ifModifiedSince: request.params._meta?.ifModifiedSince as string
-            });
-            break;
-            
-          case 'mcp://estacion-dulce/recipes#index':
-            resourceData = await getRecipesIndexResource({
-              ifNoneMatch: request.params._meta?.ifNoneMatch as string,
-              ifModifiedSince: request.params._meta?.ifModifiedSince as string
-            });
-            break;
-            
-          case 'mcp://estacion-dulce/persons#index':
-            resourceData = await getPersonsIndexResource({
-              ifNoneMatch: request.params._meta?.ifNoneMatch as string,
-              ifModifiedSince: request.params._meta?.ifModifiedSince as string
-            });
-            break;
-            
-          case 'mcp://estacion-dulce/movements#last-30d':
-            resourceData = await getMovementsLast30DResource({
-              ifNoneMatch: request.params._meta?.ifNoneMatch as string,
-              ifModifiedSince: request.params._meta?.ifModifiedSince as string
-            });
-            break;
-            
-          case 'mcp://estacion-dulce/version-manifest':
-            resourceData = await getVersionManifestResource();
-            break;
-            
-          default:
-            throw new Error(`Unknown resource: ${uri}`);
-        }
-        
-        return resourceData;
-      } catch (error) {
-        console.error(`Resource ${uri} error:`, error);
-        return {
-          contents: [{
-            type: 'text',
-            text: JSON.stringify({ error: (error as Error).message }),
-            uri,
-            mimeType: 'application/json'
-          }]
-        };
-      }
-    });
-
-    // Process request using MCP server
-    // Vercel provides body already parsed
+    // Parse request body
     const body = request.body || request;
-    
-    // Pass If-None-Match header to MCP request if present
-    const ifNoneMatch = request.headers?.get ? 
-      request.headers.get('If-None-Match') : 
-      request.headers?.['if-none-match'];
-    const ifModifiedSince = request.headers?.get ? 
-      request.headers.get('If-Modified-Since') : 
-      request.headers?.['if-modified-since'];
-    
-    if (body.params && (ifNoneMatch || ifModifiedSince)) {
-      body.params._meta = {
-        ...(body.params._meta || {}),
-        ifNoneMatch,
-        ifModifiedSince
-      };
-    }
-    
-    const response = await server.request(body, z.object({}));
+    console.log('📦 Request body:', { method: body.method, id: body.id });
 
-    return new Response(JSON.stringify(response), {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    // Handle MCP methods
+    try {
+      switch (body.method) {
+        case 'initialize': {
+          console.log('🔧 Initialize request');
+          const response = {
+            jsonrpc: '2.0',
+            id: body.id,
+            result: {
+              protocolVersion: '2024-11-05',
+              serverInfo: {
+                name: 'mcp-estacion-dulce',
+                version: '1.0.0'
+              },
+              capabilities: {
+                resources: true,
+                tools: true
+              }
+            }
+          };
+          return new Response(JSON.stringify(response), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        case 'tools/list': {
+          console.log('🛠️ Tools list request');
+          const tools = [
+            {
+              name: 'list_products',
+              description: 'List products from inventory with optional filtering',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  limit: { type: 'number', description: 'Max products (1-50, default: 20)' },
+                  categoryId: { type: 'string', description: 'Optional category filter' }
+                }
+              }
+            },
+            {
+              name: 'answer_inventory_query',
+              description: 'Answer natural language queries about inventory status',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  query: { type: 'string', description: 'Natural language query' },
+                  limit: { type: 'number', description: 'Max products (default: 20)' }
+                },
+                required: ['query']
+              }
+            },
+            {
+              name: 'get_client_orders',
+              description: 'Get orders for a specific client',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  clientId: { type: 'string', description: 'Client ID' },
+                  limit: { type: 'number', description: 'Max orders (default: 10)' }
+                },
+                required: ['clientId']
+              }
+            }
+          ];
+          
+          const response = {
+            jsonrpc: '2.0',
+            id: body.id,
+            result: { tools }
+          };
+          return new Response(JSON.stringify(response), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        case 'tools/call': {
+          const toolName = body.params?.name;
+          const args = body.params?.arguments || {};
+          console.log(`🔧 Tool call: ${toolName}`, args);
+          
+          let result: any;
+          
+          switch (toolName) {
+            case 'list_products':
+              result = await listProducts(args);
+              break;
+            case 'answer_inventory_query':
+              result = await answerInventoryQuery(args);
+              break;
+            case 'get_client_orders':
+              result = await getClientOrders(args);
+              break;
+            default:
+              throw new Error(`Unknown tool: ${toolName}`);
+          }
+          
+          const response = {
+            jsonrpc: '2.0',
+            id: body.id,
+            result: {
+              content: [{
+                type: 'text',
+                text: result.text || JSON.stringify(result, null, 2)
+              }],
+              ...(result.references && { references: result.references })
+            }
+          };
+          
+          return new Response(JSON.stringify(response), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        case 'resources/list': {
+          console.log('📁 Resources list request');
+          const response = {
+            jsonrpc: '2.0',
+            id: body.id,
+            result: { resources: RESOURCE_CATALOG }
+          };
+          return new Response(JSON.stringify(response), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        case 'resources/read': {
+          const uri = body.params?.uri;
+          const ifNoneMatch = body.params?._meta?.ifNoneMatch;
+          const ifModifiedSince = body.params?._meta?.ifModifiedSince;
+          
+          console.log(`📖 Resource read: ${uri}`, { ifNoneMatch, ifModifiedSince });
+          
+          let resourceData: any;
+          
+          switch (uri) {
+            case 'mcp://estacion-dulce/products#index':
+              resourceData = await getProductsIndexResource({ ifNoneMatch, ifModifiedSince });
+              break;
+            case 'mcp://estacion-dulce/recipes#index':
+              resourceData = await getRecipesIndexResource({ ifNoneMatch, ifModifiedSince });
+              break;
+            case 'mcp://estacion-dulce/persons#index':
+              resourceData = await getPersonsIndexResource({ ifNoneMatch, ifModifiedSince });
+              break;
+            case 'mcp://estacion-dulce/movements#last-30d':
+              resourceData = await getMovementsLast30DResource({ ifNoneMatch, ifModifiedSince });
+              break;
+            case 'mcp://estacion-dulce/version-manifest':
+              resourceData = await getVersionManifestResource();
+              break;
+            default:
+              throw new Error(`Unknown resource: ${uri}`);
+          }
+          
+          const response = {
+            jsonrpc: '2.0',
+            id: body.id,
+            result: resourceData
+          };
+          
+          return new Response(JSON.stringify(response), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        default:
+          throw new Error(`Unknown method: ${body.method}`);
+      }
+    } catch (methodError) {
+      console.error('❌ Method error:', methodError);
+      const errorResponse = createErrorResponse(
+        ErrorCode.INTERNAL,
+        (methodError as Error).message || 'Method execution failed',
+        methodError,
+        request.url
+      );
+      return createHttpErrorResponse(errorResponse, 500);
+    }
 
   } catch (error) {
     const errorResponse = createErrorResponse(
