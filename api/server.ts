@@ -16,22 +16,27 @@ import {
  * Main MCP server handler for Estación Dulce
  * Handles MCP protocol over HTTP without SDK connection
  */
-export default async function handler(request: any): Promise<Response> {
+export default async function handler(req: any, res: any): Promise<void> {
   console.log('🚀 Handler function called');
+  console.log('🔍 Request type:', typeof req);
+  console.log('🔍 Response type:', typeof res);
+  
   try {
     // Log incoming request
     console.log('📥 Incoming request:', {
-      method: request.method,
-      url: request.url,
-      hasAuthHeader: !!(request.headers?.get ? request.headers.get('authorization') : request.headers?.authorization),
-      bodyType: typeof request.body,
-      hasBody: !!request.body
+      method: req.method,
+      url: req.url,
+      hasAuthHeader: !!(req.headers?.get ? req.headers.get('authorization') : req.headers?.authorization),
+      bodyType: typeof req.body,
+      hasBody: !!req.body
     });
 
     // Validate authentication
-    if (!validateAuth(request)) {
+    if (!validateAuth(req)) {
       console.log('❌ Auth failed - returning 401');
-      return createAuthError();
+      const authError = createAuthError();
+      res.status(authError.status).json(authError.body);
+      return;
     }
     
     console.log('✅ Auth successful');
@@ -41,22 +46,22 @@ export default async function handler(request: any): Promise<Response> {
     console.log(`MCP Server running in ${env} mode`);
 
     // Parse request body
-    console.log('🔍 Request type:', typeof request);
-    console.log('🔍 Request.body type:', typeof request.body);
-    console.log('🔍 Request keys:', Object.keys(request).slice(0, 10));
+    console.log('🔍 Request type:', typeof req);
+    console.log('🔍 Request.body type:', typeof req.body);
+    console.log('🔍 Request keys:', Object.keys(req).slice(0, 10));
     
     let body: any;
     
     // Vercel provides body in different ways depending on the request
-    if (typeof request.body === 'string') {
+    if (typeof req.body === 'string') {
       console.log('📦 Parsing body from string');
-      body = JSON.parse(request.body);
-    } else if (request.body && typeof request.body === 'object') {
+      body = JSON.parse(req.body);
+    } else if (req.body && typeof req.body === 'object') {
       console.log('📦 Using body object directly');
-      body = request.body;
+      body = req.body;
     } else {
       console.log('📦 Using request as body');
-      body = request;
+      body = req;
     }
     
     console.log('📦 Parsed body:', { method: body.method, id: body.id });
@@ -82,23 +87,11 @@ export default async function handler(request: any): Promise<Response> {
             }
           };
           console.log('📤 Returning initialize response:', JSON.stringify(response));
-          console.log('🚀 Creating Response object...');
+          console.log('🚀 Sending response with Vercel format...');
           
-          const responseBody = JSON.stringify(response);
-          console.log('📏 Response body length:', responseBody.length);
-          
-          const httpResponse = new Response(responseBody, {
-            status: 200,
-            headers: { 
-              'Content-Type': 'application/json',
-              'Content-Length': String(responseBody.length)
-            }
-          });
-          
-          console.log('✅ Response created, status:', httpResponse.status);
-          console.log('✅ Response headers:', Object.fromEntries(httpResponse.headers.entries()));
-          console.log('🚀 Returning response now...');
-          return httpResponse;
+          res.status(200).json(response);
+          console.log('✅ Response sent successfully');
+          return;
         }
 
         case 'tools/list': {
@@ -146,9 +139,8 @@ export default async function handler(request: any): Promise<Response> {
             id: body.id,
             result: { tools }
           };
-          return new Response(JSON.stringify(response), {
-            headers: { 'Content-Type': 'application/json' }
-          });
+          res.status(200).json(response);
+          return;
         }
 
         case 'tools/call': {
@@ -180,15 +172,11 @@ export default async function handler(request: any): Promise<Response> {
             };
             
             console.log('📤 Returning tool not found error:', JSON.stringify(errorResponse));
-            console.log('🚀 About to return Response...');
+            console.log('🚀 Sending error response...');
             
-            const response = new Response(JSON.stringify(errorResponse), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            });
-            
-            console.log('✅ Response created, returning now');
-            return response;
+            res.status(200).json(errorResponse);
+            console.log('✅ Error response sent');
+            return;
           }
           
           console.log(`✅ Tool validated, executing: ${toolName}`);
@@ -220,9 +208,8 @@ export default async function handler(request: any): Promise<Response> {
             }
           };
           
-          return new Response(JSON.stringify(response), {
-            headers: { 'Content-Type': 'application/json' }
-          });
+          res.status(200).json(response);
+          return;
         }
 
         case 'resources/list': {
@@ -232,9 +219,8 @@ export default async function handler(request: any): Promise<Response> {
             id: body.id,
             result: { resources: RESOURCE_CATALOG }
           };
-          return new Response(JSON.stringify(response), {
-            headers: { 'Content-Type': 'application/json' }
-          });
+          res.status(200).json(response);
+          return;
         }
 
         case 'resources/read': {
@@ -272,9 +258,8 @@ export default async function handler(request: any): Promise<Response> {
             result: resourceData
           };
           
-          return new Response(JSON.stringify(response), {
-            headers: { 'Content-Type': 'application/json' }
-          });
+          res.status(200).json(response);
+          return;
         }
 
         default:
@@ -296,12 +281,9 @@ export default async function handler(request: any): Promise<Response> {
         }
       };
       
-      console.log('📤 Returning error response:', errorResponse);
-      
-      return new Response(JSON.stringify(errorResponse), {
-        status: 200, // JSON-RPC errors use 200 with error object
-        headers: { 'Content-Type': 'application/json' }
-      });
+      console.log('📤 Sending method error response');
+      res.status(200).json(errorResponse);
+      return;
     }
 
   } catch (error) {
@@ -310,11 +292,11 @@ export default async function handler(request: any): Promise<Response> {
       ErrorCode.INTERNAL,
       'Internal Server Error',
       error,
-      request.url
+      req.url
     );
     
-    console.log('📤 Returning top-level error response');
-    return createHttpErrorResponse(errorResponse, 500);
+    console.log('📤 Sending top-level error response');
+    res.status(500).json(errorResponse);
   } finally {
     console.log('🏁 Handler execution completed');
   }
