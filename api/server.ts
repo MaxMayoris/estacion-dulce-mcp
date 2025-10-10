@@ -67,35 +67,35 @@ export default async function handler(req: any, res: any): Promise<void> {
           const tools = [
             {
               name: 'list_products',
-              description: 'List products from inventory with optional filtering',
+              description: 'List inventory products',
               inputSchema: {
                 type: 'object',
                 properties: {
-                  limit: { type: 'number', description: 'Max products (1-50, default: 20)' },
-                  categoryId: { type: 'string', description: 'Optional category filter' }
+                  limit: { type: 'number' },
+                  categoryId: { type: 'string' }
                 }
               }
             },
             {
               name: 'answer_inventory_query',
-              description: 'Answer natural language queries about inventory status',
+              description: 'Query inventory in natural language',
               inputSchema: {
                 type: 'object',
                 properties: {
-                  query: { type: 'string', description: 'Natural language query' },
-                  limit: { type: 'number', description: 'Max products (default: 20)' }
+                  query: { type: 'string' },
+                  limit: { type: 'number' }
                 },
                 required: ['query']
               }
             },
             {
               name: 'get_client_orders',
-              description: 'Get orders for a specific client',
+              description: 'Get client orders',
               inputSchema: {
                 type: 'object',
                 properties: {
-                  clientId: { type: 'string', description: 'Client ID' },
-                  limit: { type: 'number', description: 'Max orders (default: 10)' }
+                  clientId: { type: 'string' },
+                  limit: { type: 'number' }
                 },
                 required: ['clientId']
               }
