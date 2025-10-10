@@ -75,12 +75,12 @@ const resources: Resource[] = RESOURCE_CATALOG.map(r => ({
  * @param request - HTTP request object
  * @returns HTTP response with MCP protocol data
  */
-async function handler(request: Request): Promise<Response> {
+async function handler(request: any): Promise<Response> {
   // Log incoming request
   console.log('📥 Incoming request:', {
     method: request.method,
     url: request.url,
-    hasAuthHeader: !!request.headers.get('authorization')
+    hasAuthHeader: !!(request.headers?.get ? request.headers.get('authorization') : request.headers?.authorization)
   });
 
   // Validate authentication
@@ -290,12 +290,20 @@ async function handler(request: Request): Promise<Response> {
     });
 
   } catch (error) {
-    console.error('Server error:', error);
+    console.error('❌ Server error:', error);
+    console.error('❌ Error stack:', (error as Error).stack);
+    console.error('❌ Error details:', {
+      message: (error as Error).message,
+      name: (error as Error).name,
+      cause: (error as any).cause
+    });
+    
     return new Response(
       JSON.stringify({ 
         error: 'Internal Server Error',
         code: 'INTERNAL',
-        message: (error as Error).message 
+        message: (error as Error).message,
+        stack: process.env.ENV === 'DEV' ? (error as Error).stack : undefined
       }),
       {
         status: 500,
