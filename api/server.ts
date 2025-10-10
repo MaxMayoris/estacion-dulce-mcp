@@ -125,18 +125,43 @@ async function handler(request: any): Promise<Response> {
           
           let result: any;
           
+          // Validate tool exists before execution
+          const validTools = ['list_products', 'answer_inventory_query', 'get_client_orders'];
+          if (!validTools.includes(toolName)) {
+            console.error(`❌ Unknown tool requested: ${toolName}`);
+            const errorResponse = {
+              jsonrpc: '2.0',
+              id: body.id,
+              error: {
+                code: -32601, // Method not found
+                message: `Unknown tool: ${toolName}`,
+                data: {
+                  validTools,
+                  requestedTool: toolName
+                }
+              }
+            };
+            
+            console.log('📤 Returning tool not found error:', errorResponse);
+            
+            return new Response(JSON.stringify(errorResponse), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+          
           switch (toolName) {
             case 'list_products':
               result = await listProducts(args);
               break;
             case 'answer_inventory_query':
-            case 'answer_query': // Alias for compatibility
               result = await answerInventoryQuery(args);
               break;
             case 'get_client_orders':
               result = await getClientOrders(args);
               break;
             default:
+              // This should never happen due to validation above
               throw new Error(`Unknown tool: ${toolName}`);
           }
           
