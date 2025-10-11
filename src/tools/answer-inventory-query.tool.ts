@@ -18,8 +18,7 @@ const AnswerInventoryQuerySchema = z.object({
  */
 export async function answerInventoryQuery(args: unknown): Promise<{
   text: string;
-  references?: Array<{ uri: string; name: string }>;
-  error?: { error: string; code: string };
+  references?: Array<{uri: string, title: string, mimeType: string}>;
 }> {
   try {
     const validatedInput = AnswerInventoryQuerySchema.parse(args);
@@ -30,7 +29,7 @@ export async function answerInventoryQuery(args: unknown): Promise<{
     if ('error' in result) {
       return {
         text: `Error querying inventory: ${result.error}`,
-        error: result
+        references: []
       };
     }
     
@@ -57,11 +56,13 @@ export async function answerInventoryQuery(args: unknown): Promise<{
     const references = [
       {
         uri: 'mcp://estacion-dulce/products#index',
-        name: 'Products Index'
+        title: 'Products Index',
+        mimeType: 'application/json'
       },
       {
         uri: 'mcp://estacion-dulce/version-manifest',
-        name: 'Version Manifest'
+        title: 'Version Manifest',
+        mimeType: 'application/json'
       }
     ];
     
@@ -75,14 +76,14 @@ export async function answerInventoryQuery(args: unknown): Promise<{
       const errorMessage = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
       return {
         text: `Validation error: ${errorMessage}`,
-        error: { error: errorMessage, code: 'VALIDATION' }
+        references: []
       };
     }
     
     console.error('answer_inventory_query error:', error);
     return {
       text: 'Internal server error',
-      error: { error: 'Internal server error', code: 'INTERNAL' }
+      references: []
     };
   }
 }

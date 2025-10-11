@@ -14,16 +14,42 @@ const ListProductsSchema = z.object({
  * MCP tool for listing products
  * 
  * @param args - Tool arguments
- * @returns Promise<ApiResponse<Product[]>>
+ * @returns Promise<{text: string, references?: Array<{uri: string, title: string, mimeType: string}>}>
  */
-export async function listProducts(args: unknown): Promise<ApiResponse<Product[]>> {
+export async function listProducts(args: unknown): Promise<{
+  text: string;
+  references?: Array<{uri: string, title: string, mimeType: string}>;
+}> {
   try {
     // Validate input
     const validatedInput = ListProductsSchema.parse(args);
     
     // Use ProductService to get data
     const productService = new ProductService();
-    return await productService.listProducts(validatedInput.limit, validatedInput.categoryId);
+    const result = await productService.listProducts(validatedInput.limit, validatedInput.categoryId);
+    
+    if ('error' in result) {
+      return {
+        text: `Error: ${result.error}${result.details ? ` - ${result.details}` : ''}`,
+        references: []
+      };
+    }
+    
+    const products = result.data;
+    const productList = products.map(p => 
+      `${p.name} - Stock: ${p.quantity} ${p.measure} - Precio: $${p.salePrice}`
+    ).join('\n');
+    
+    return {
+      text: `Productos encontrados (${products.length}):\n${productList}`,
+      references: [
+        {
+          uri: `mcp://estacion-dulce/products${validatedInput.categoryId ? `?category=${validatedInput.categoryId}` : ''}`,
+          title: `Products List${validatedInput.categoryId ? ` - Category: ${validatedInput.categoryId}` : ''}`,
+          mimeType: 'application/json'
+        }
+      ]
+    };
     
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -31,17 +57,16 @@ export async function listProducts(args: unknown): Promise<ApiResponse<Product[]
       console.error('list_products validation error:', errorMessage);
       
       return {
-        error: `Validation error: ${errorMessage}`,
-        code: 'VALIDATION',
+        text: `Validation error: ${errorMessage}`,
+        references: []
       };
     }
     
     // Handle other errors
     console.error('list_products error:', error);
     return {
-      error: 'Internal server error',
-      code: 'INTERNAL',
-      details: (error as Error).message || 'Unknown error'
+      text: `Error: ${(error as Error).message || 'Unknown error'}`,
+      references: []
     };
   }
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getFirestore } from '../firebase';
+import { getFirestore } from '../firebase.js';
 
 /**
  * Input validation schema for get_client_orders tool
@@ -17,8 +17,7 @@ const GetClientOrdersSchema = z.object({
  */
 export async function getClientOrders(args: unknown): Promise<{
   text: string;
-  references?: Array<{ uri: string; name: string }>;
-  error?: { error: string; code: string };
+  references?: Array<{uri: string, title: string, mimeType: string}>;
 }> {
   try {
     const validatedInput = GetClientOrdersSchema.parse(args);
@@ -57,7 +56,8 @@ export async function getClientOrders(args: unknown): Promise<{
     // Generate references
     const references = orders.map((order: any) => ({
       uri: `mcp://estacion-dulce/orders/${order.id}`,
-      name: `Order ${order.id}`
+      title: `Order ${order.id}`,
+      mimeType: 'application/json'
     }));
     
     return {
@@ -70,14 +70,14 @@ export async function getClientOrders(args: unknown): Promise<{
       const errorMessage = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
       return {
         text: `Validation error: ${errorMessage}`,
-        error: { error: errorMessage, code: 'VALIDATION' }
+        references: []
       };
     }
     
     console.error('get_client_orders error:', error);
     return {
       text: 'Internal server error',
-      error: { error: 'Internal server error', code: 'INTERNAL' }
+      references: []
     };
   }
 }
