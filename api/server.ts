@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { validateAuth, createAuthError } from '../src/auth.js';
 import { validateEnvironment } from '../src/validation.js';
 import { createErrorResponse, createHttpErrorResponse, ErrorCode } from '../src/errors/index.js';
-import { listProducts, answerInventoryQuery, getClientOrders } from '../src/tools/index.js';
+import { listProducts, answerInventoryQuery, getClientOrders, getMovement, getKitchenOrders } from '../src/tools/index.js';
 import { 
   RESOURCE_CATALOG,
   getProductsIndexResource,
@@ -99,6 +99,29 @@ export default async function handler(req: any, res: any): Promise<void> {
                 },
                 required: ['clientId']
               }
+            },
+            {
+              name: 'get_movement',
+              description: 'Get movement details',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  movementId: { type: 'string' }
+                },
+                required: ['movementId']
+              }
+            },
+            {
+              name: 'get_kitchen_orders',
+              description: 'Get kitchen orders with filters',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  movementId: { type: 'string' },
+                  status: { type: 'string' },
+                  limit: { type: 'number' }
+                }
+              }
             }
           ];
           
@@ -119,7 +142,7 @@ export default async function handler(req: any, res: any): Promise<void> {
           let result: any;
           
           // Validate tool exists before execution
-          const validTools = ['list_products', 'answer_inventory_query', 'get_client_orders'];
+          const validTools = ['list_products', 'answer_inventory_query', 'get_client_orders', 'get_movement', 'get_kitchen_orders'];
           
           if (!validTools.includes(toolName)) {
             const errorResponse = {
@@ -149,6 +172,12 @@ export default async function handler(req: any, res: any): Promise<void> {
               break;
             case 'get_client_orders':
               result = await getClientOrders(args);
+              break;
+            case 'get_movement':
+              result = await getMovement(args);
+              break;
+            case 'get_kitchen_orders':
+              result = await getKitchenOrders(args);
               break;
             default:
               // This should never happen due to validation above
