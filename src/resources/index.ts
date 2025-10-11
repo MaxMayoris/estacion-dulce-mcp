@@ -16,49 +16,49 @@ export const RESOURCE_CATALOG = [
   {
     uri: 'mcp://estacion-dulce/products#index',
     name: 'Products',
-    description: 'Product index',
+    description: 'Products',
     mimeType: 'application/json',
     version: '1.0.0'
   },
   {
     uri: 'mcp://estacion-dulce/recipes#index',
     name: 'Recipes',
-    description: 'Recipe index',
+    description: 'Recipes',
     mimeType: 'application/json',
     version: '1.0.0'
   },
   {
     uri: 'mcp://estacion-dulce/persons#index',
     name: 'Persons',
-    description: 'Person index',
+    description: 'Persons',
     mimeType: 'application/json',
     version: '1.0.0'
   },
   {
     uri: 'mcp://estacion-dulce/movements#last-30d',
     name: 'Movements',
-    description: 'Last 30 days',
+    description: 'Last 30d',
     mimeType: 'application/json',
     version: '1.0.0'
   },
   {
     uri: 'mcp://estacion-dulce/categories#index',
     name: 'Categories',
-    description: 'Category index',
+    description: 'Categories',
     mimeType: 'application/json',
     version: '1.0.0'
   },
   {
     uri: 'mcp://estacion-dulce/measures#index',
     name: 'Measures',
-    description: 'Measure units',
+    description: 'Units',
     mimeType: 'application/json',
     version: '1.0.0'
   },
   {
     uri: 'mcp://estacion-dulce/version-manifest',
     name: 'Versions',
-    description: 'ETags manifest',
+    description: 'ETags',
     mimeType: 'application/json',
     version: '1.0.0'
   }

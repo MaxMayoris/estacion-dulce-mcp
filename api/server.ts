@@ -69,7 +69,7 @@ export default async function handler(req: any, res: any): Promise<void> {
           const tools = [
             {
               name: 'list_products',
-              description: 'List inventory products',
+              description: 'List products',
               inputSchema: {
                 type: 'object',
                 properties: {
@@ -80,7 +80,7 @@ export default async function handler(req: any, res: any): Promise<void> {
             },
             {
               name: 'answer_inventory_query',
-              description: 'Query inventory in natural language',
+              description: 'Query inventory',
               inputSchema: {
                 type: 'object',
                 properties: {
@@ -92,7 +92,7 @@ export default async function handler(req: any, res: any): Promise<void> {
             },
             {
               name: 'get_client_orders',
-              description: 'Get orders (sales) for a person',
+              description: 'Get person orders',
               inputSchema: {
                 type: 'object',
                 properties: {
@@ -104,7 +104,7 @@ export default async function handler(req: any, res: any): Promise<void> {
             },
             {
               name: 'get_movement',
-              description: 'Get movement details',
+              description: 'Get movement detail',
               inputSchema: {
                 type: 'object',
                 properties: {
@@ -115,7 +115,7 @@ export default async function handler(req: any, res: any): Promise<void> {
             },
             {
               name: 'get_kitchen_orders',
-              description: 'Get kitchen orders with filters',
+              description: 'Get kitchen orders',
               inputSchema: {
                 type: 'object',
                 properties: {
@@ -127,7 +127,7 @@ export default async function handler(req: any, res: any): Promise<void> {
             },
             {
               name: 'get_person_details',
-              description: 'Get person details with PII (audit logged)',
+              description: 'Get person PII',
               inputSchema: {
                 type: 'object',
                 properties: {
@@ -139,7 +139,7 @@ export default async function handler(req: any, res: any): Promise<void> {
             },
             {
               name: 'get_recipe_detail',
-              description: 'Get recipe with ingredients and units',
+              description: 'Get recipe detail',
               inputSchema: {
                 type: 'object',
                 properties: {
@@ -150,7 +150,7 @@ export default async function handler(req: any, res: any): Promise<void> {
             },
             {
               name: 'get_product_detail',
-              description: 'Get product with measure unit and inventory',
+              description: 'Get product detail',
               inputSchema: {
                 type: 'object',
                 properties: {
