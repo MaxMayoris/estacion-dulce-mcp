@@ -1,13 +1,15 @@
 import { Person } from '../dtos/person.dto';
+import { EPersonType } from '../enums/person.enum';
 
 /**
  * Compact person projection for persons#index resource
  * Redacted - NO PII (no email, phone, address)
+ * Includes type: CLIENT, PROVIDER, etc.
  */
 export interface PersonIndexProjection {
   id: string;
   displayName: string;
-  tags: string[];
+  type: EPersonType | string;
 }
 
 /**
@@ -18,7 +20,7 @@ export function toPersonIndexProjection(person: Person): PersonIndexProjection {
   return {
     id: person.id,
     displayName: `${person.name} ${person.lastName}`.trim(),
-    tags: [person.type] // Type as tag (client, provider, etc)
+    type: person.type || 'UNKNOWN' // EPersonType.CLIENT, EPersonType.PROVIDER
   };
 }
 

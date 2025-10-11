@@ -92,14 +92,14 @@ export default async function handler(req: any, res: any): Promise<void> {
             },
             {
               name: 'get_client_orders',
-              description: 'Get client orders',
+              description: 'Get orders (sales) for a person',
               inputSchema: {
                 type: 'object',
                 properties: {
-                  clientId: { type: 'string' },
+                  personId: { type: 'string' },
                   limit: { type: 'number' }
                 },
-                required: ['clientId']
+                required: ['personId']
               }
             },
             {

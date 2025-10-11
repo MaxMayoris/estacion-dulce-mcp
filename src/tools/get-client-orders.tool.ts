@@ -5,14 +5,14 @@ import { getFirestore } from '../firebase.js';
  * Input validation schema for get_client_orders tool
  */
 const GetClientOrdersSchema = z.object({
-  clientId: z.string().min(1, 'Client ID cannot be empty'),
+  personId: z.string().min(1, 'Person ID cannot be empty'),
   limit: z.number().min(1).max(50).default(10),
 });
 
 /**
- * Gets orders for a specific client
+ * Gets orders (sales) for a specific person (client)
  * 
- * @param args - Tool arguments with clientId
+ * @param args - Tool arguments with personId
  * @returns Client orders with references
  */
 export async function getClientOrders(args: unknown): Promise<{
@@ -24,17 +24,17 @@ export async function getClientOrders(args: unknown): Promise<{
     
     const db = getFirestore();
     
-    // Query orders for client
+    // Query orders (sales) for person
     const ordersSnapshot = await db
       .collection('movements')
-      .where('personId', '==', validatedInput.clientId)
-      .where('type', '==', 'sale')
+      .where('personId', '==', validatedInput.personId)
+      .where('type', '==', 'SALE')
       .limit(validatedInput.limit)
       .get();
     
     if (ordersSnapshot.empty) {
       return {
-        text: `No orders found for client ${validatedInput.clientId}`
+        text: `No orders found for person ${validatedInput.personId}`
       };
     }
     
@@ -44,7 +44,7 @@ export async function getClientOrders(args: unknown): Promise<{
     }));
     
     // Generate natural language response
-    let response = `Found ${orders.length} orders for client ${validatedInput.clientId}:\n\n`;
+    let response = `Found ${orders.length} orders for person ${validatedInput.personId}:\n\n`;
     
     orders.forEach((order: any, index) => {
       response += `${index + 1}. Order ${order.id}\n`;
