@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { validateAuth, createAuthError } from '../src/auth.js';
 import { validateEnvironment } from '../src/validation.js';
 import { createErrorResponse, createHttpErrorResponse, ErrorCode } from '../src/errors/index.js';
-import { listProducts, answerInventoryQuery, getClientOrders, getMovement, getKitchenOrders } from '../src/tools/index.js';
+import { listProducts, answerInventoryQuery, getClientOrders, getMovement, getKitchenOrders, getPersonDetails } from '../src/tools/index.js';
 import { 
   RESOURCE_CATALOG,
   getProductsIndexResource,
@@ -122,6 +122,18 @@ export default async function handler(req: any, res: any): Promise<void> {
                   limit: { type: 'number' }
                 }
               }
+            },
+            {
+              name: 'get_person_details',
+              description: 'Get person details with PII (audit logged)',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  personId: { type: 'string' },
+                  purpose: { type: 'string' }
+                },
+                required: ['personId']
+              }
             }
           ];
           
@@ -142,7 +154,7 @@ export default async function handler(req: any, res: any): Promise<void> {
           let result: any;
           
           // Validate tool exists before execution
-          const validTools = ['list_products', 'answer_inventory_query', 'get_client_orders', 'get_movement', 'get_kitchen_orders'];
+          const validTools = ['list_products', 'answer_inventory_query', 'get_client_orders', 'get_movement', 'get_kitchen_orders', 'get_person_details'];
           
           if (!validTools.includes(toolName)) {
             const errorResponse = {
@@ -178,6 +190,9 @@ export default async function handler(req: any, res: any): Promise<void> {
               break;
             case 'get_kitchen_orders':
               result = await getKitchenOrders(args);
+              break;
+            case 'get_person_details':
+              result = await getPersonDetails(args);
               break;
             default:
               // This should never happen due to validation above
