@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { validateAuth, createAuthError } from '../src/auth.js';
 import { validateEnvironment } from '../src/validation.js';
 import { createErrorResponse, createHttpErrorResponse, ErrorCode } from '../src/errors/index.js';
-import { listProducts, answerInventoryQuery, getClientOrders, getMovement, getKitchenOrders, getPersonDetails } from '../src/tools/index.js';
+import { listProducts, answerInventoryQuery, getClientOrders, getMovement, getKitchenOrders, getPersonDetails, getRecipeDetail } from '../src/tools/index.js';
 import { 
   RESOURCE_CATALOG,
   getProductsIndexResource,
@@ -10,6 +10,7 @@ import {
   getPersonsIndexResource,
   getMovementsLast30DResource,
   getCategoriesIndexResource,
+  getMeasuresIndexResource,
   getVersionManifestResource
 } from '../src/resources/index.js';
 
@@ -135,6 +136,17 @@ export default async function handler(req: any, res: any): Promise<void> {
                 },
                 required: ['personId']
               }
+            },
+            {
+              name: 'get_recipe_detail',
+              description: 'Get recipe with ingredients and units',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  recipeId: { type: 'string' }
+                },
+                required: ['recipeId']
+              }
             }
           ];
           
@@ -155,7 +167,7 @@ export default async function handler(req: any, res: any): Promise<void> {
           let result: any;
           
           // Validate tool exists before execution
-          const validTools = ['list_products', 'answer_inventory_query', 'get_client_orders', 'get_movement', 'get_kitchen_orders', 'get_person_details'];
+          const validTools = ['list_products', 'answer_inventory_query', 'get_client_orders', 'get_movement', 'get_kitchen_orders', 'get_person_details', 'get_recipe_detail'];
           
           if (!validTools.includes(toolName)) {
             const errorResponse = {
@@ -194,6 +206,9 @@ export default async function handler(req: any, res: any): Promise<void> {
               break;
             case 'get_person_details':
               result = await getPersonDetails(args);
+              break;
+            case 'get_recipe_detail':
+              result = await getRecipeDetail(args);
               break;
             default:
               // This should never happen due to validation above
@@ -250,6 +265,9 @@ export default async function handler(req: any, res: any): Promise<void> {
               break;
             case 'mcp://estacion-dulce/categories#index':
               resourceData = await getCategoriesIndexResource(ifNoneMatch);
+              break;
+            case 'mcp://estacion-dulce/measures#index':
+              resourceData = await getMeasuresIndexResource(ifNoneMatch);
               break;
             case 'mcp://estacion-dulce/version-manifest':
               resourceData = await getVersionManifestResource();

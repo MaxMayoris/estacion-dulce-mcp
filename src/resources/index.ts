@@ -6,6 +6,7 @@ export * from './recipes-index.resource';
 export * from './persons-index.resource';
 export * from './movements-last-30d.resource';
 export * from './categories-index.resource';
+export * from './measures-index.resource';
 export * from './version-manifest.resource';
 
 /**
@@ -44,6 +45,13 @@ export const RESOURCE_CATALOG = [
     uri: 'mcp://estacion-dulce/categories#index',
     name: 'Categories',
     description: 'Category index',
+    mimeType: 'application/json',
+    version: '1.0.0'
+  },
+  {
+    uri: 'mcp://estacion-dulce/measures#index',
+    name: 'Measures',
+    description: 'Measure units',
     mimeType: 'application/json',
     version: '1.0.0'
   },
