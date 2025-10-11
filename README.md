@@ -68,6 +68,16 @@ Authorization: Bearer your-api-key
 }
 ```
 
+## Privacy & Compliance
+
+This server handles PII (Personally Identifiable Information) and implements audit logging for GDPR and Ley 25.326 compliance.
+
+See [PRIVACY.md](./PRIVACY.md) for:
+- PII classification and handling
+- Audit logging details
+- GDPR/Ley 25.326 compliance
+- Data subject rights
+
 ## Development Rules
 
 See `.cursor/rules/develope-rules.mdc` for complete project guidelines.
