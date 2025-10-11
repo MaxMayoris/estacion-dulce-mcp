@@ -77,44 +77,113 @@ export async function getRecipeDetail(args: any): Promise<any> {
     const productMap = new Map(products.map(p => [p.id, p]));
     const measureMap = new Map(measures.map(m => [m.id, m]));
 
-    // Build enriched recipe response
-    let response = `Recipe: ${recipeData.name}\n`;
-    response += `Cost: $${recipeData.cost.toFixed(2)}\n`;
-    response += `Sale Price: $${recipeData.salePrice.toFixed(2)}\n`;
-    response += `On Sale: ${recipeData.onSale ? 'Yes' : 'No'}\n`;
-    response += `\nIngredients by Section:\n`;
-    response += `${'='.repeat(50)}\n\n`;
+    // Build enriched recipe response with ALL details
+    let response = `${'='.repeat(60)}\n`;
+    response += `📝 RECIPE DETAILS\n`;
+    response += `${'='.repeat(60)}\n\n`;
+    
+    // Basic info
+    response += `🏷️  Name: ${recipeData.name}\n`;
+    response += `💰 Cost: $${recipeData.cost.toFixed(2)}\n`;
+    response += `💵 Sale Price: $${recipeData.salePrice.toFixed(2)}\n`;
+    response += `📊 Profit: ${recipeData.profitPercentage.toFixed(2)}%\n`;
+    response += `🎯 Suggested Price: $${recipeData.suggestedPrice.toFixed(2)}\n`;
+    response += `📦 Unit/Yield: ${recipeData.unit}\n`;
+    response += `✅ On Sale: ${recipeData.onSale ? 'Yes' : 'No'}\n`;
+    response += `🔍 Query Available: ${recipeData.onSaleQuery ? 'Yes' : 'No'}\n`;
+    response += `🎨 Customizable: ${recipeData.customizable ? 'Yes' : 'No'}\n`;
+    
+    // Categories
+    if (recipeData.categories && recipeData.categories.length > 0) {
+      response += `🏷️  Categories: ${recipeData.categories.join(', ')}\n`;
+    }
+    
+    // Images
+    if (recipeData.images && recipeData.images.length > 0) {
+      response += `📸 Images: ${recipeData.images.length} available\n`;
+    }
+    
+    // Description and details
+    if (recipeData.description) {
+      response += `\n📄 Description:\n${recipeData.description}\n`;
+    }
+    
+    if (recipeData.detail) {
+      response += `\n📋 Details:\n${recipeData.detail}\n`;
+    }
+    
+    response += `\n${'='.repeat(60)}\n`;
+    response += `🥘 INGREDIENTS BY SECTION\n`;
+    response += `${'='.repeat(60)}\n\n`;
 
     recipeData.sections?.forEach(section => {
       response += `📦 ${section.name}\n`;
-      response += `${'-'.repeat(40)}\n`;
+      response += `${'-'.repeat(50)}\n`;
+      
+      let sectionCost = 0;
       
       section.products?.forEach(recipeProduct => {
         const product = productMap.get(recipeProduct.productId);
         if (product) {
           const measure = measureMap.get(product.measure);
           const unit = measure ? measure.unit : 'units';
-          response += `  • ${product.name}: ${recipeProduct.quantity} ${unit}\n`;
+          const itemCost = (product.cost || 0) * recipeProduct.quantity;
+          sectionCost += itemCost;
+          
+          response += `  • ${product.name}: ${recipeProduct.quantity} ${unit}`;
+          if (product.cost > 0) {
+            response += ` ($${itemCost.toFixed(2)})`;
+          }
+          response += `\n`;
         } else {
           response += `  • Unknown product (${recipeProduct.productId}): ${recipeProduct.quantity}\n`;
         }
       });
+      
+      if (sectionCost > 0) {
+        response += `${'-'.repeat(50)}\n`;
+        response += `  💵 Section Cost: $${sectionCost.toFixed(2)}\n`;
+      }
       
       response += `\n`;
     });
 
     // Handle nested recipes if any
     if (recipeData.recipes && recipeData.recipes.length > 0) {
-      response += `\n🔗 Nested Recipes:\n`;
-      response += `${'-'.repeat(40)}\n`;
+      response += `\n${'='.repeat(60)}\n`;
+      response += `🔗 NESTED RECIPES\n`;
+      response += `${'='.repeat(60)}\n\n`;
+      
+      let nestedTotalCost = 0;
+      
       for (const nestedRecipe of recipeData.recipes) {
         const nestedDoc = await db.collection('recipes').doc(nestedRecipe.recipeId).get();
         if (nestedDoc.exists) {
           const nestedData = nestedDoc.data();
-          response += `  • ${nestedData?.name || nestedRecipe.recipeId}: ${nestedRecipe.quantity}x\n`;
+          const nestedCost = (nestedData?.cost || 0) * nestedRecipe.quantity;
+          nestedTotalCost += nestedCost;
+          
+          response += `  • ${nestedData?.name || nestedRecipe.recipeId}\n`;
+          response += `    Quantity: ${nestedRecipe.quantity}x\n`;
+          response += `    Cost per unit: $${(nestedData?.cost || 0).toFixed(2)}\n`;
+          response += `    Total: $${nestedCost.toFixed(2)}\n\n`;
         }
       }
+      
+      if (nestedTotalCost > 0) {
+        response += `${'-'.repeat(50)}\n`;
+        response += `💵 Total Nested Recipes Cost: $${nestedTotalCost.toFixed(2)}\n`;
+      }
     }
+    
+    // Summary
+    response += `\n${'='.repeat(60)}\n`;
+    response += `📊 COST SUMMARY\n`;
+    response += `${'='.repeat(60)}\n`;
+    response += `💰 Total Recipe Cost: $${recipeData.cost.toFixed(2)}\n`;
+    response += `💵 Sale Price: $${recipeData.salePrice.toFixed(2)}\n`;
+    response += `📈 Profit Margin: $${(recipeData.salePrice - recipeData.cost).toFixed(2)} (${recipeData.profitPercentage.toFixed(2)}%)\n`;
+    response += `${'='.repeat(60)}\n`;
 
     return {
       text: response,
