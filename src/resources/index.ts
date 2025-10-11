@@ -7,6 +7,7 @@ export * from './persons-index.resource';
 export * from './movements-last-30d.resource';
 export * from './categories-index.resource';
 export * from './measures-index.resource';
+export * from './clients-recent.resource';
 export * from './version-manifest.resource';
 
 /**
@@ -52,6 +53,13 @@ export const RESOURCE_CATALOG = [
     uri: 'mcp://estacion-dulce/measures#index',
     name: 'Measures',
     description: 'Units',
+    mimeType: 'application/json',
+    version: '1.0.0'
+  },
+  {
+    uri: 'mcp://estacion-dulce/clients#recent',
+    name: 'Recent Clients',
+    description: 'Last 30d buyers',
     mimeType: 'application/json',
     version: '1.0.0'
   },

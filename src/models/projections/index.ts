@@ -7,3 +7,4 @@ export * from './person.projection';
 export * from './movement.projection';
 export * from './category.projection';
 export * from './measure.projection';
+export * from './client.projection';

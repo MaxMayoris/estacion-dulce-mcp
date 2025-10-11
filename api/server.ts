@@ -11,6 +11,7 @@ import {
   getMovementsLast30DResource,
   getCategoriesIndexResource,
   getMeasuresIndexResource,
+  getClientsRecentResource,
   getVersionManifestResource
 } from '../src/resources/index.js';
 
@@ -282,6 +283,9 @@ export default async function handler(req: any, res: any): Promise<void> {
               break;
             case 'mcp://estacion-dulce/measures#index':
               resourceData = await getMeasuresIndexResource(ifNoneMatch);
+              break;
+            case 'mcp://estacion-dulce/clients#recent':
+              resourceData = await getClientsRecentResource(ifNoneMatch);
               break;
             case 'mcp://estacion-dulce/version-manifest':
               resourceData = await getVersionManifestResource();
