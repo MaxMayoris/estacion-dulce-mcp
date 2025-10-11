@@ -1,5 +1,6 @@
 import { Movement } from '../dtos/movement.dto';
 import { Person } from '../dtos/person.dto';
+import { toDate, toISODateString } from '../../utils/date-utils';
 
 /**
  * Client activity projection for clients#recent resource
@@ -37,7 +38,9 @@ export function aggregateClientPurchases(
       totalSpent: 0
     };
 
-    const movementDate = new Date(movement.movementDate);
+    // Convert Firestore Timestamp to Date
+    const movementDate = toDate(movement.movementDate);
+    
     if (movementDate > stats.lastPurchase) {
       stats.lastPurchase = movementDate;
     }
@@ -59,7 +62,7 @@ export function aggregateClientPurchases(
       id: personId,
       displayName: `${person.name} ${person.lastName}`.trim(),
       type: person.type || 'CLIENT',
-      lastPurchase: stats.lastPurchase.toISOString().split('T')[0],
+      lastPurchase: toISODateString(stats.lastPurchase),
       purchaseCount: stats.purchaseCount,
       totalSpent: Math.round(stats.totalSpent * 100) / 100
     });

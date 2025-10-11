@@ -1,4 +1,5 @@
 import { Movement } from '../dtos/movement.dto';
+import { toDate, toISODateString } from '../../utils/date-utils';
 
 /**
  * Aggregated movement projection for movements#last-30d resource
@@ -17,7 +18,7 @@ export function aggregateMovements(movements: Movement[]): MovementAggregatedPro
   const aggregated = new Map<string, MovementAggregatedProjection>();
 
   movements.forEach(movement => {
-    const date = new Date(movement.movementDate).toISOString().split('T')[0];
+    const date = toISODateString(movement.movementDate);
     const key = `${date}-${movement.type}`;
 
     if (!aggregated.has(key)) {
@@ -47,7 +48,7 @@ export function filterLast30Days(movements: Movement[]): Movement[] {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   return movements.filter(m => {
-    const movementDate = new Date(m.movementDate);
+    const movementDate = toDate(m.movementDate);
     return movementDate >= thirtyDaysAgo;
   });
 }

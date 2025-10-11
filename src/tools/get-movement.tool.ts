@@ -5,6 +5,7 @@ import { Person } from '../models/dtos/person.dto.js';
 import { Product } from '../models/dtos/product.dto.js';
 import { Recipe } from '../models/dtos/recipe.dto.js';
 import { Measure } from '../models/dtos/measure.dto.js';
+import { toLocaleString } from '../utils/date-utils.js';
 
 /**
  * Get detailed movement data with enriched information
@@ -112,7 +113,7 @@ export async function getMovement(args: any): Promise<any> {
 
     // Basic info
     response += `🆔 ID: ${movementDoc.id}\n`;
-    response += `📅 Date: ${new Date(movementData.movementDate).toLocaleString()}\n`;
+    response += `📅 Date: ${toLocaleString(movementData.movementDate)}\n`;
     response += `🏷️  Type: ${movementData.type || 'Unknown'}\n`;
     response += `👤 Person: ${personName}\n`;
     if (movementData.personId) {
@@ -133,7 +134,7 @@ export async function getMovement(args: any): Promise<any> {
     }
     
     if (movementData.appliedAt) {
-      response += `✅ Applied At: ${new Date(movementData.appliedAt).toLocaleString()}\n`;
+      response += `✅ Applied At: ${toLocaleString(movementData.appliedAt)}\n`;
     }
 
     // Items section
@@ -182,7 +183,7 @@ export async function getMovement(args: any): Promise<any> {
       response += `${'='.repeat(60)}\n\n`;
       
       response += `📦 Type: ${movementData.delivery.type}\n`;
-      response += `📅 Date: ${new Date(movementData.delivery.date).toLocaleString()}\n`;
+      response += `📅 Date: ${toLocaleString(movementData.delivery.date)}\n`;
       response += `📊 Status: ${movementData.delivery.status}\n`;
       
       if (movementData.delivery.shipment) {
