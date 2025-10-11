@@ -2,14 +2,16 @@ import { Product } from '../dtos/product.dto';
 
 /**
  * Compact product projection for products#index resource
- * Only essential fields for AI reasoning
+ * Only essential data - use get_product_detail tool for full details
  */
 export interface ProductIndexProjection {
   id: string;
   name: string;
-  categoryId?: string;
-  price: number;
-  stock: number;
+  quantity: number;
+  minimumQuantity: number;
+  cost: number;
+  salePrice: number;
+  isLowStock: boolean;
 }
 
 /**
@@ -19,9 +21,11 @@ export function toProductIndexProjection(product: Product): ProductIndexProjecti
   return {
     id: product.id,
     name: product.name,
-    categoryId: product.measure, // Using measure as category placeholder
-    price: product.salePrice || product.cost,
-    stock: product.quantity
+    quantity: product.quantity,
+    minimumQuantity: product.minimumQuantity,
+    cost: product.cost,
+    salePrice: product.salePrice,
+    isLowStock: product.quantity <= product.minimumQuantity
   };
 }
 

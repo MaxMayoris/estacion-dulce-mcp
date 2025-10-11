@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { validateAuth, createAuthError } from '../src/auth.js';
 import { validateEnvironment } from '../src/validation.js';
 import { createErrorResponse, createHttpErrorResponse, ErrorCode } from '../src/errors/index.js';
-import { listProducts, answerInventoryQuery, getClientOrders, getMovement, getKitchenOrders, getPersonDetails, getRecipeDetail } from '../src/tools/index.js';
+import { listProducts, answerInventoryQuery, getClientOrders, getMovement, getKitchenOrders, getPersonDetails, getRecipeDetail, getProductDetail } from '../src/tools/index.js';
 import { 
   RESOURCE_CATALOG,
   getProductsIndexResource,
@@ -147,6 +147,17 @@ export default async function handler(req: any, res: any): Promise<void> {
                 },
                 required: ['recipeId']
               }
+            },
+            {
+              name: 'get_product_detail',
+              description: 'Get product with measure unit and inventory',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  productId: { type: 'string' }
+                },
+                required: ['productId']
+              }
             }
           ];
           
@@ -167,7 +178,7 @@ export default async function handler(req: any, res: any): Promise<void> {
           let result: any;
           
           // Validate tool exists before execution
-          const validTools = ['list_products', 'answer_inventory_query', 'get_client_orders', 'get_movement', 'get_kitchen_orders', 'get_person_details', 'get_recipe_detail'];
+          const validTools = ['list_products', 'answer_inventory_query', 'get_client_orders', 'get_movement', 'get_kitchen_orders', 'get_person_details', 'get_recipe_detail', 'get_product_detail'];
           
           if (!validTools.includes(toolName)) {
             const errorResponse = {
@@ -209,6 +220,9 @@ export default async function handler(req: any, res: any): Promise<void> {
               break;
             case 'get_recipe_detail':
               result = await getRecipeDetail(args);
+              break;
+            case 'get_product_detail':
+              result = await getProductDetail(args);
               break;
             default:
               // This should never happen due to validation above

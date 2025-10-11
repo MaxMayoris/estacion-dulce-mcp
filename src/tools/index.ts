@@ -8,3 +8,4 @@ export * from './get-movement.tool';
 export * from './get-kitchen-orders.tool';
 export * from './get-person-details.tool';
 export * from './get-recipe-detail.tool';
+export * from './get-product-detail.tool';
