@@ -115,6 +115,9 @@ export async function getMovement(args: any): Promise<any> {
     response += `📅 Date: ${new Date(movementData.movementDate).toLocaleString()}\n`;
     response += `🏷️  Type: ${movementData.type || 'Unknown'}\n`;
     response += `👤 Person: ${personName}\n`;
+    if (movementData.personId) {
+      response += `🆔 Person ID: ${movementData.personId}\n`;
+    }
     response += `💰 Total Amount: $${movementData.totalAmount.toFixed(2)}\n`;
     
     if (movementData.detail) {
